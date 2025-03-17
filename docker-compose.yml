@@ -1,0 +1,37 @@
+version: "3"
+
+services:
+  postgres:
+    image: postgres:latest
+    container_name: postgres_dockerizing
+    ports:
+      - 5432:5432
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: passdb
+      POSTGRES_USER: usernamedb
+    volumes:
+      - db-data:/home/pedro/Workspace/github.com/dezzare/go-brawl-scrims-stats/volumes/db
+    networks:
+      - appn
+
+  app:
+    container_name: app_dockerizing
+    build: .
+    ports:
+      - 8080:8080
+    restart: always
+    volumes:
+      - app-data:/home/pedro/Workspace/github.com/dezzare/go-brawl-scrims-stats/volumes/app
+    depends_on:
+      - postgres
+    networks:
+      - appn
+
+volumes:
+  database_dockerizing:
+  app_volume:
+
+networks:
+  appn:
+    driver: bridge
