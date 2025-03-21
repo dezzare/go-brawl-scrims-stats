@@ -29,8 +29,8 @@ services:
       - appn
 
 volumes:
-  database_dockerizing:
-  app_volume:
+  db-data:
+  app-data:
 
 networks:
   appn:
