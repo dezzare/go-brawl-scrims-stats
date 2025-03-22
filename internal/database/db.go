@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"sync"
+	"time"
 
 	"github.com/dezzare/go-brawl-scrims-stats/internal/database/migrate"
 	"gorm.io/driver/postgres"
@@ -28,20 +29,41 @@ func (dbc *DbConn) setDsn() {
 }
 
 // Open connect to a database
-func (dbc *DbConn) open() {
+func (dbc *DbConn) open() error {
 
 	db, err := gorm.Open(postgres.Open(dbc.Dsn), &gorm.Config{})
-	if err != nil {
-		log.Fatal(err)
+	if err != nil || db == nil {
+		log.Println("DB: waiting for the database to become available.")
+
+		for i := 1; i <= 10; i++ {
+			db, err := gorm.Open(postgres.Open(dbc.Dsn), &gorm.Config{})
+
+			if db != nil && err == nil {
+				dbc.db = db
+				break
+			}
+
+			time.Sleep(5 * time.Second)
+		}
+
+		if err != nil || db == nil {
+			return err
+		}
 	}
+
 	dbc.db = db
+	return nil
 
 }
 
 func Start() {
 	setDBConfig()
 	dbConn.setDsn()
-	dbConn.open()
+
+	if err := dbConn.open(); err != nil {
+		log.Fatal("Failed to initialize database")
+	}
+
 	migrate.AutoMigrate(dbConn.db)
 
 }
