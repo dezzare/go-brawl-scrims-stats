@@ -11,18 +11,19 @@ services:
       POSTGRES_PASSWORD: passdb
       POSTGRES_USER: usernamedb
     volumes:
-      - db-data:/home/pedro/Workspace/github.com/dezzare/go-brawl-scrims-stats/volumes/db
+      - db-data:/volumes/db
+
     networks:
       - appn
 
   app:
-    container_name: app_dockerizing
+    container_name: go-brawl-scrims-stats_app
     build: .
     ports:
-      - 8080:8080
+      - 5000:5000
     restart: always
     volumes:
-      - app-data:/home/pedro/Workspace/github.com/dezzare/go-brawl-scrims-stats/volumes/app
+      - app-data:/volumes/app
     depends_on:
       - postgres
     networks:
