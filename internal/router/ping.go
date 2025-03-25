@@ -28,7 +28,7 @@ func addPingRoutes(rg *gin.RouterGroup) {
 
 		wg.Wait()
 
-		saveToDB(ps)
+		saveToDB(&ps)
 
 		c.JSON(http.StatusOK, ps)
 	})
@@ -55,7 +55,7 @@ func since(ps *[]entity.Ping, wg *sync.WaitGroup) {
 
 }
 
-func saveToDB(ps []entity.Ping) {
+func saveToDB(ps *[]entity.Ping) {
 	db := database.Db()
-	db.Create(&ps)
+	db.Create(ps)
 }
