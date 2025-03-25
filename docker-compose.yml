@@ -1,14 +1,32 @@
 services:
-  app:
+  # app:
+  #   container_name: bss
+  #   build: .
+  #   ports:
+  #     - 5000:5000
+  #   restart: always
+  #   depends_on:
+  #     db:
+  #       condition: service_healthy
+  #       restart: true
+  #   networks:
+  #     - appn
+
+  app-dev:
     container_name: bss
-    build: .
+    build:
+      context: .
+      dockerfile: dev.Dockerfile
     ports:
+      - 8080:8080
       - 5000:5000
     restart: always
     depends_on:
       db:
         condition: service_healthy
         restart: true
+    volumes:
+      - ./:/app
     networks:
       - appn
 
@@ -39,19 +57,19 @@ services:
       retries: 5
       start_period: 10s
 
-  db-adm:
-    image: dpage/pgadmin4:latest
-    container_name: dbadm
-    restart: always
-    depends_on:
-      - db
-    environment:
-      PGADMIN_DEFAULT_EMAIL: "user@localhost.com"
-      PGADMIN_DEFAULT_PASSWORD: "pass"
-    ports:
-      - 8080:80
-    networks:
-      - appn
+  # db-adm:
+  #   image: dpage/pgadmin4:latest
+  #   container_name: dbadm
+  #   restart: always
+  #   depends_on:
+  #     - db
+  #   environment:
+  #     PGADMIN_DEFAULT_EMAIL: "user@localhost.com"
+  #     PGADMIN_DEFAULT_PASSWORD: "pass"
+  #   ports:
+  #     - 8080:80
+  #   networks:
+  #     - appn
 
 networks:
   appn:
