@@ -18,11 +18,14 @@ func populateRegistry() map[string]interface{} {
 
 // AutoMigrate Migrate all Schemas
 func AutoMigrate(db *gorm.DB) error {
+	fmt.Println("-------------")
 	fmt.Println("Populating")
+	fmt.Println("-------------")
 	r := populateRegistry()
-	for _, v := range r {
+	for k, v := range r {
 		err := db.AutoMigrate(v)
-		fmt.Printf("%v", v)
+		fmt.Println("Key: " + k)
+		fmt.Printf("Value: %v\n", v)
 		if err != nil {
 			return err
 		}

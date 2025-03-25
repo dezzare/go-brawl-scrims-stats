@@ -8,8 +8,8 @@ type DBConfig struct {
 	UserName string
 	Password string
 	DBName   string
-	Port     string
 	Host     string
+	Port     string
 }
 
 // dbConfig is the global DB configuration
@@ -18,11 +18,10 @@ var dbConfig DBConfig
 // setDBConfig get the env configurations and return the database configuration
 func setDBConfig() {
 
-	dbConfig.UserName = os.Getenv("UNAMEDB")
-	dbConfig.Password = os.Getenv("PASSDB")
-	dbConfig.DBName = os.Getenv("DBNAME")
-	dbConfig.Port = os.Getenv("DBPORT")
-	dbConfig.Host = os.Getenv("HOSTDB")
-
+	dbConfig.UserName = os.Getenv("DB_USERNAME")
+	dbConfig.Password = os.Getenv("DB_PASSWORD")
+	dbConfig.DBName = os.Getenv("DB_NAME")
+	dbConfig.Host = os.Getenv("DB_HOST")
+	dbConfig.Port = os.Getenv("DB_PORT")
 
 }

@@ -1,38 +1,59 @@
-version: "3"
-
 services:
-  postgres:
-    image: postgres:latest
-    container_name: postgres_dockerizing
-    ports:
-      - 5432:5432
-    restart: always
-    environment:
-      POSTGRES_PASSWORD: passdb
-      POSTGRES_USER: usernamedb
-    volumes:
-      - db-data:/volumes/db
-
-    networks:
-      - appn
-
   app:
-    container_name: go-brawl-scrims-stats_app
+    container_name: bss
     build: .
     ports:
       - 5000:5000
     restart: always
-    volumes:
-      - app-data:/volumes/app
     depends_on:
-      - postgres
+      db:
+        condition: service_healthy
+        restart: true
     networks:
       - appn
 
-volumes:
-  db-data:
-  app-data:
+  db:
+    image: postgres:alpine
+    container_name: ${DB_HOST}
+    ports:
+      - 5432:5432
+    restart: always
+    environment:
+      - POSTGRES_USER=${DB_USERNAME}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=dbdata
+      - PGUSER=${DB_USERNAME}
+      - PGDATABASE=${DB_NAME}
+      - PGPASSWORD=${DB_PASSWORD}
+      - PGDATA=/var/lib/postgresql/data
+    volumes:
+      - ./volumes/db:/var/lib/postgresql/data
+    env_file:
+      - ./.env
+    networks:
+      - appn
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c 'pg_isready -U ${DB_USERNAME} -d ${DB_NAME}'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  db-adm:
+    image: dpage/pgadmin4:latest
+    container_name: dbadm
+    restart: always
+    depends_on:
+      - db
+    environment:
+      PGADMIN_DEFAULT_EMAIL: "user@localhost.com"
+      PGADMIN_DEFAULT_PASSWORD: "pass"
+    ports:
+      - 8080:80
+    networks:
+      - appn
 
 networks:
   appn:
     driver: bridge
+    name: appn

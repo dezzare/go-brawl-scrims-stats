@@ -1,61 +1,61 @@
 package router
 
 import (
-	"fmt"
+	"math/rand/v2"
 	"net/http"
-	"os/exec"
-	"strconv"
-	"strings"
+	"sync"
+	"time"
 
 	"github.com/dezzare/go-brawl-scrims-stats/internal/database"
 	"github.com/dezzare/go-brawl-scrims-stats/internal/database/entity"
 	"github.com/gin-gonic/gin"
 )
 
+// addPingRoutes make nonsense things, just to satisfy curiosity and testing
 func addPingRoutes(rg *gin.RouterGroup) {
 	ping := rg.Group("/ping")
 
 	ping.GET("/", func(c *gin.Context) {
-		out, _ := exec.Command("ping", "brawlstars.com", "-c 5").Output()
+		var wg sync.WaitGroup
+		var ps []entity.Ping
 
-		ps, err := parsePingOutput(string(out))
-		if err != nil {
-			fmt.Println(err)
+		for i := 0; i <= 3; i++ {
+			wg.Add(3)
+			go since(&ps, &wg)
+			go since(&ps, &wg)
+			go since(&ps, &wg)
 		}
 
-		db := database.Db()
-		db.Create(ps)
+		wg.Wait()
+
+		saveToDB(ps)
 
 		c.JSON(http.StatusOK, ps)
 	})
 }
 
-func parsePingOutput(output string) ([]entity.Ping, error) {
-	var responses []entity.Ping
-	lines := strings.Split(output, "\n")
+func since(ps *[]entity.Ping, wg *sync.WaitGroup) {
+	defer wg.Done()
 
-	var host, ip string
+	d := time.Now()
 
-	for _, line := range lines {
-		if strings.HasPrefix(line, "PING") {
-			parts := strings.Split(line, " ")
-			if len(parts) >= 3 {
-				host = parts[1]
-				ip = strings.Trim(parts[2], "()")
-			}
-		} else if strings.Contains(line, "time=") {
-			parts := strings.Fields(line)
-			for _, part := range parts {
-				if strings.HasPrefix(part, "time=") {
-					timeStr := strings.TrimPrefix(part, "time=")
-					time, err := strconv.ParseFloat(strings.TrimSuffix(timeStr, " ms"), 64)
-					if err == nil {
-						responses = append(responses, entity.Ping{Host: host, IP: ip, Time: time})
-					}
-				}
-			}
+	for i := 0; i <= 5; i++ {
+		s := rand.IntN(10)
+
+		elapse := time.Since(d).Seconds()
+		elapse = elapse*1000 + float64(i+1)/10
+		time.Sleep(time.Duration(s) * time.Millisecond)
+		ping := entity.Ping{
+			TimeInMs:  elapse,
+			CreatedAt: d.Format(time.RFC1123Z),
+			UpdatedAt: time.Now().Format(time.RFC1123Z),
 		}
+		*ps = append(*ps, ping)
 	}
 
-	return responses, nil
+}
+
+func saveToDB(ps []entity.Ping) {
+	db := database.Db()
+	db.Create(&ps)
 }
