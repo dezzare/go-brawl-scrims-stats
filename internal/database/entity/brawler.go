@@ -6,6 +6,11 @@ import (
 
 type Brawler struct {
 	gorm.Model
-	Name   string
+	ID     uint    `gorm:"primaryKey" json:"id"`
+	Name   string  `json:"name"`
 	Events []Event `gorm:"many2many:brawler_events"`
+}
+
+type Brawlers struct {
+	Brawler []Brawler `json:"items"`
 }

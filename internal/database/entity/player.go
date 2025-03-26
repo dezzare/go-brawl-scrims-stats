@@ -9,3 +9,9 @@ type Player struct {
 	TeamID uint
 	Events []Event `gorm:"many2many:player_events;"`
 }
+
+type Players []Player
+
+func GetAllPlayers() *Players {
+	return &Players{}
+}
