@@ -46,9 +46,7 @@ func since(ps *[]entity.Ping, wg *sync.WaitGroup) {
 		elapse = elapse*1000 + float64(i+1)/10
 		time.Sleep(time.Duration(s) * time.Millisecond)
 		ping := entity.Ping{
-			TimeInMs:  elapse,
-			CreatedAt: d.Format(time.RFC1123Z),
-			UpdatedAt: time.Now().Format(time.RFC1123Z),
+			TimeInMs: elapse,
 		}
 		*ps = append(*ps, ping)
 	}

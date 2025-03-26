@@ -2,7 +2,8 @@ package entity
 
 import "gorm.io/gorm"
 
-type Ping struct {
+type Mode struct {
 	gorm.Model
-	TimeInMs float64
+	Name string
+	Maps []Map
 }
