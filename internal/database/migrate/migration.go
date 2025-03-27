@@ -10,7 +10,7 @@ func getEntityModels() []interface{} {
 	return []interface{}{
 		&entity.Ping{}, // Just for testing
 		&entity.Brawler{},
-		&entity.Event{},
+		&entity.Battle{},
 		&entity.Map{},
 		&entity.Mode{},
 		&entity.Player{},

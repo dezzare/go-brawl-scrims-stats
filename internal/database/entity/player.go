@@ -6,8 +6,8 @@ import (
 
 type Player struct {
 	gorm.Model
-	Name   string  `json:"name"`
-	Tag    string  `josn:"tag"`
-	TeamID uint    `gorm:"default:none"`
-	Events []Event `gorm:"many2many:player_events;"`
+	Name   string   `json:"name"`
+	Tag    string   `josn:"tag"`
+	TeamID uint     `gorm:"default:none"`
+	Events []Battle `gorm:"many2many:player_events;"`
 }

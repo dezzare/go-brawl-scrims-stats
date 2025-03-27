@@ -2,7 +2,7 @@ package entity
 
 import "gorm.io/gorm"
 
-type Event struct {
+type Battle struct {
 	gorm.Model
 	Mode     Mode      `gorm:"foreignKey:Name"`
 	Map      Map       `gorm:"foreignKey:Name"`
