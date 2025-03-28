@@ -10,7 +10,9 @@ import (
 )
 
 // setBrawlersBase request to API all Brawlers and save to DB
-func setBrawlersBase(c *client.Client) {
+func setBrawlersBase() {
+	c := client.ClientConn()
+
 	var model entity.Brawlers
 	if err := json.Unmarshal(c.GetBrawlers(), &model); err != nil {
 		fmt.Println(err)
