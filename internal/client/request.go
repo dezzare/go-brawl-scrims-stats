@@ -25,6 +25,5 @@ func (c *Client) doRequest(method string, path string) (data []byte, err error) 
 		return nil, fmt.Errorf("\nERROR: HTTP Status code %v\n", res.StatusCode)
 	}
 
-	fmt.Printf("\nStatus Code: %v \nHTTP Status: %v\n", res.StatusCode, http.StatusText(res.StatusCode))
 	return
 }

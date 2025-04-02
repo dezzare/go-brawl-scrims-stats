@@ -1,6 +1,7 @@
 package database
 
 import (
+	"fmt"
 	"os"
 )
 
@@ -17,7 +18,7 @@ var dbConfig DBConfig
 
 // setDBConfig get the env configurations and return the database configuration
 func setDBConfig() {
-
+	fmt.Println("Getting ENV variables for DB confing")
 	dbConfig.UserName = os.Getenv("DB_USERNAME")
 	dbConfig.Password = os.Getenv("DB_PASSWORD")
 	dbConfig.DBName = os.Getenv("DB_NAME")

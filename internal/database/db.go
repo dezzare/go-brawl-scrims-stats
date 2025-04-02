@@ -26,12 +26,13 @@ func (dbc *DbConn) setDsn() {
 		dbConfig.Host, dbConfig.UserName, dbConfig.Password, dbConfig.DBName, dbConfig.Port)
 	// "host=%s user=%s password=%s port=%s sslmode=disable",
 	// dbConfig.Host, dbConfig.UserName, dbConfig.Password, dbConfig.Port)
+
+	fmt.Println("Configuring Database connection")
 }
 
 // Open connect to a database
 func (dbc *DbConn) open() error {
-	fmt.Println("--------------  DSN  -------------")
-	fmt.Println(dbc.Dsn)
+	fmt.Println("OPENNING DB CONNECTION")
 
 	db, err := gorm.Open(postgres.Open(dbc.Dsn), &gorm.Config{})
 	if err != nil || db == nil {
@@ -49,11 +50,13 @@ func (dbc *DbConn) open() error {
 		}
 
 		if err != nil || db == nil {
+			fmt.Printf("Error connecting DB: %v\n", err)
 			return err
 		}
 	}
 
 	dbc.db = db
+	fmt.Println("DB connected")
 	return nil
 
 }

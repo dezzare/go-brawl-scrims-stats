@@ -11,17 +11,20 @@ import (
 
 // setBrawlersBase request to API all Brawlers and save to DB
 func setBrawlersBase() {
+	fmt.Println("Setting Brawler DB")
 	c := client.ClientConn()
 
 	var model entity.Brawlers
 	if err := json.Unmarshal(c.GetBrawlers(), &model); err != nil {
-		fmt.Println(err)
+		fmt.Println("Error unmarshal brawler: ", err)
 		return
 	}
 
 	db := database.Db()
 	for _, v := range model.Brawler {
-		db.Save(&v)
+		if err := db.Save(&v).Error; err != nil {
+			fmt.Println("Error saving brawler: ", v, err)
+		}
 	}
-
+	fmt.Println("Brawler DB ready")
 }

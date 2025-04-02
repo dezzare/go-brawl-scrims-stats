@@ -1,6 +1,7 @@
 package client
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 )
@@ -20,10 +21,13 @@ func newClient() *Client {
 		baseURL: os.Getenv("CLIENT_BASEURL"),
 		apiKey:  os.Getenv("APIKEY"),
 	}
+
 }
 
 func Start() {
+	fmt.Println("Starting API Client")
 	client = *newClient()
+	fmt.Println("API Client ready")
 }
 
 func ClientConn() *Client {

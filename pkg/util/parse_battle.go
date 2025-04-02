@@ -43,57 +43,87 @@ type RawMatch struct {
 	Battle     RawBattle `json:"battle"`
 }
 
+type RM struct {
+	Items []RawMatch `json:"items"`
+}
+
 func ConvertToBattle(data []byte) []entity.Battle {
+	fmt.Println("Converting battlelog []byte to struct")
 	rm := parseToRawMatch(data)
 	var battles []entity.Battle
 
 	for _, v := range rm {
-		battles = append(battles, parseToBattle(v))
+		b := parseRawMatchToBattle(v)
+		parseRawMatchToBattleResult(v, b)
 	}
 
 	return battles
 }
 
 func parseToRawMatch(data []byte) []RawMatch {
-	var rawM []RawMatch
+	var rawM RM
 	if err := json.Unmarshal(data, &rawM); err != nil {
-		fmt.Println(err)
+		fmt.Println("Error unmarshal ToRawMatch: ", err)
 	}
-	return rawM
+	return rawM.Items
 }
 
-func parseToBattle(match RawMatch) entity.Battle {
-
-	mode, _ := handler.GetModeByName(match.Event.Mode)
-	mapS, _ := handler.GetMapByName(match.Event.Map)
+func parseRawMatchToBattle(match RawMatch) *entity.Battle {
 	battle := entity.Battle{
-		Mode:       mode,
-		Map:        mapS,
-		Result:     match.Battle.Result,
+		Mode:       match.Event.Mode,
+		Map:        match.Event.Map,
 		BattleTime: match.BattleTime,
 	}
+	b := handler.CreateBattle(battle)
+	return b
+}
 
-	brawlersPlayed := []entity.BrawlerPlayed{}
-
+func parseRawMatchToBattleResult(match RawMatch, b *entity.Battle) {
+	// battleResult := []entity.BattleResult{}
 	for _, teamPlayers := range match.Battle.Teams {
 		players := []entity.Player{}
-
+		auxPlayer := teamPlayers[0]
 		for _, rawPlayer := range teamPlayers {
-			brawler, _ := handler.GetBrawlerByName(rawPlayer.Brawler.Name)
-			player := handler.GetPlayerByTag(rawPlayer.Tag)
+			brawler, err := handler.GetBrawlerByName(rawPlayer.Brawler.Name)
+			if err != nil {
+				fmt.Println("Error getting brawler: ", rawPlayer.Brawler.Name)
+			}
+			player, err := handler.GetPlayerByTag(rawPlayer.Tag)
+			if err != nil {
+				rp := entity.Player{Tag: rawPlayer.Tag, Name: rawPlayer.Name}
+				handler.CreatePlayer(rp)
+				player, _ = handler.GetPlayerByTag(rp.Tag)
+				fmt.Println("Error getting player: ", rawPlayer.Tag)
+			}
 
 			players = append(players, player)
 
-			brawlerPlayed := entity.BrawlerPlayed{
-				Player:    player,
+			battleR := entity.BattleResult{
+				PlayerID:  player.ID,
+				BattleID:  b.ID,
 				BrawlerID: brawler.ID,
-				BattleID:  battle.ID,
+				Result:    match.Battle.Result,
 			}
-			brawlersPlayed = append(brawlersPlayed, brawlerPlayed)
-		}
 
+			if !isSameTeam(auxPlayer.Tag, player.Tag) {
+				battleR.Result = changeResult(match.Battle.Result)
+			}
+
+			handler.CreateBattleResult(battleR)
+		}
 	}
 
-	battle.Brawlers = brawlersPlayed
-	return battle
+	// battle.Results = battleResult
+	// return battle
+}
+
+func changeResult(r string) string {
+	switch r {
+	case "victory":
+		return "defeat"
+	case "defeat":
+		return "victory"
+	default:
+		return "draw"
+	}
 }
