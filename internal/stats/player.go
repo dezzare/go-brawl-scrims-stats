@@ -5,7 +5,7 @@ import (
 
 	"github.com/dezzare/go-brawl-scrims-stats/internal/client"
 	"github.com/dezzare/go-brawl-scrims-stats/internal/database/entity"
-	"github.com/dezzare/go-brawl-scrims-stats/internal/database/registry"
+	"github.com/dezzare/go-brawl-scrims-stats/internal/database/repository"
 	"github.com/dezzare/go-brawl-scrims-stats/pkg/util"
 )
 
@@ -30,25 +30,25 @@ type BrawlerStat struct {
 
 func loadPlayers() {
 	fmt.Println("Loading players to memory")
-	players, err := registry.GetPlayersFromFile()
+	players, err := repository.GetPlayersFromFile()
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 	for _, v := range players.Player {
 		fmt.Println("Looking in DB for player: ", v.Tag)
-		p, err := registry.GetPlayerByTag(v.Tag)
+		p, err := repository.GetPlayerByTag(v.Tag)
 		v.Follow = true
 		if err != nil && v.Tag != "" {
 			fmt.Println("Player: ", v, "not in DB")
 			c := client.ClientConn()
 			r := util.ConvertToPlayer(c.GetPlayer(v.Tag))
 			r.Update(v)
-			registry.CreatePlayer(r)
+			repository.CreatePlayer(r)
 			continue
 		}
 		p.Update(v)
-		registry.SavePlayer(p)
+		repository.SavePlayer(p)
 	}
 }
 
@@ -61,7 +61,7 @@ func requestPlayerBattlelog(playerTag string) []entity.Battle {
 func setPlayersBattlelog() {
 	fmt.Println("Setting players DB")
 	loadPlayers()
-	players := registry.GetAllPlayers()
+	players := repository.GetAllPlayers()
 
 	for _, v := range *players {
 		if v.Follow {
@@ -74,7 +74,7 @@ func setPlayersBattlelog() {
 
 func saveBattlelog(bl []entity.Battle) {
 	for _, v := range bl {
-		registry.CreateBattle(v)
+		repository.CreateBattle(v)
 	}
 }
 
@@ -86,11 +86,11 @@ func setPlayersBrawlerStat(pbs *[]PlayerBrawlerStat, players *[]entity.Player) e
 	}
 
 	var battleResults []entity.BattleResult
-	if err := registry.GetBattleresultByPlayerIDs(playersID, &battleResults); err != nil {
+	if err := repository.GetBattleresultByPlayerIDs(playersID, &battleResults); err != nil {
 		fmt.Println(err)
 	}
 
-	brawlers := registry.GetAllBrawlers()
+	brawlers := repository.GetAllBrawlers()
 
 	playerBrawlerStats, err := convertToPlayerBrawlerStat(&battleResults, players, &brawlers)
 	if err != nil {

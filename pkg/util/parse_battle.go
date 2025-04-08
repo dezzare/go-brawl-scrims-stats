@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/dezzare/go-brawl-scrims-stats/internal/database/entity"
-	"github.com/dezzare/go-brawl-scrims-stats/internal/database/registry"
+	"github.com/dezzare/go-brawl-scrims-stats/internal/database/repository"
 )
 
 // Aux Structs to map JSON
@@ -74,7 +74,7 @@ func parseRawMatchToBattle(match RawMatch) *entity.Battle {
 		Map:        match.Event.Map,
 		BattleTime: match.BattleTime,
 	}
-	b := registry.CreateBattle(battle)
+	b := repository.CreateBattle(battle)
 	return b
 }
 
@@ -84,15 +84,15 @@ func parseRawMatchToBattleResult(match RawMatch, b *entity.Battle) {
 		players := []entity.Player{}
 		auxPlayer := teamPlayers[0]
 		for _, rawPlayer := range teamPlayers {
-			brawler, err := registry.GetBrawlerByName(rawPlayer.Brawler.Name)
+			brawler, err := repository.GetBrawlerByName(rawPlayer.Brawler.Name)
 			if err != nil {
 				fmt.Println("Error getting brawler: ", rawPlayer.Brawler.Name)
 			}
-			player, err := registry.GetPlayerByTag(rawPlayer.Tag)
+			player, err := repository.GetPlayerByTag(rawPlayer.Tag)
 			if err != nil {
 				rp := entity.Player{Tag: rawPlayer.Tag, Name: rawPlayer.Name}
-				registry.CreatePlayer(rp)
-				player, _ = registry.GetPlayerByTag(rp.Tag)
+				repository.CreatePlayer(rp)
+				player, _ = repository.GetPlayerByTag(rp.Tag)
 				fmt.Println("Error getting player: ", rawPlayer.Tag)
 			}
 
@@ -109,7 +109,7 @@ func parseRawMatchToBattleResult(match RawMatch, b *entity.Battle) {
 				battleR.Result = changeResult(match.Battle.Result)
 			}
 
-			registry.CreateBattleResult(battleR)
+			repository.CreateBattleResult(battleR)
 		}
 	}
 

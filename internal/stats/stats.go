@@ -3,7 +3,7 @@ package stats
 import (
 	"fmt"
 
-	"github.com/dezzare/go-brawl-scrims-stats/internal/database/registry"
+	"github.com/dezzare/go-brawl-scrims-stats/internal/database/repository"
 )
 
 func Start() {
@@ -14,7 +14,7 @@ func Start() {
 }
 
 func getStats() {
-	players := registry.GetAllPlayers()
+	players := repository.GetAllPlayers()
 
 	// Create map for check if
 	teamMap := make(map[string]bool)

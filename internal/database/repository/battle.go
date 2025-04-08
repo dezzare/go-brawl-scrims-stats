@@ -1,4 +1,4 @@
-package registry
+package repository
 
 import (
 	"fmt"
@@ -25,6 +25,7 @@ func CreateBattle(b entity.Battle) *entity.Battle {
 	return &b
 }
 
+// CreateBattleResult recieve entity.BattleResult and save to DB
 func CreateBattleResult(b entity.BattleResult) {
 	db := database.Db()
 
@@ -34,30 +35,6 @@ func CreateBattleResult(b entity.BattleResult) {
 			fmt.Println("Error saving battleresult to DB: ", err)
 		}
 	}
-}
-
-func haveBattle(db *gorm.DB, battle *entity.Battle) bool {
-
-	if err := db.Model(battle).Preload(clause.Associations).Where(
-		"battle_time = ? AND mode = ? AND map = ?",
-		battle.BattleTime, battle.Mode, battle.Map,
-	).First(&battle).Error; err != nil {
-		return false
-	}
-
-	return true
-}
-
-func haveBattleResult(db *gorm.DB, battle *entity.BattleResult) bool {
-	var r entity.BattleResult
-	result := db.Model(r).Preload(clause.Associations).Where(
-		"result = ? AND brawler_id = ? AND player_id = ? AND battle_id = ?",
-		battle.Result, battle.BrawlerID, battle.PlayerID, battle.BattleID,
-	).First(battle)
-	if result.Error != nil {
-		return false
-	}
-	return true
 }
 
 func GetBattleresultByPlayerIDs(ids []uint, battleResults *[]entity.BattleResult) error {
@@ -112,6 +89,31 @@ func GetSharedBattles(players []uint, battleResults *[]entity.BattleResult) erro
 	}
 
 	return nil
+}
+
+// haveBattle check if battle already in DB
+func haveBattle(db *gorm.DB, battle *entity.Battle) bool {
+
+	if err := db.Model(battle).Preload(clause.Associations).Where(
+		"battle_time = ? AND mode = ? AND map = ?",
+		battle.BattleTime, battle.Mode, battle.Map,
+	).First(&battle).Error; err != nil {
+		return false
+	}
+
+	return true
+}
+
+func haveBattleResult(db *gorm.DB, battle *entity.BattleResult) bool {
+	var r entity.BattleResult
+	result := db.Model(r).Preload(clause.Associations).Where(
+		"result = ? AND brawler_id = ? AND player_id = ? AND battle_id = ?",
+		battle.Result, battle.BrawlerID, battle.PlayerID, battle.BattleID,
+	).First(battle)
+	if result.Error != nil {
+		return false
+	}
+	return true
 }
 
 func intersect(a, b []uint) []uint {
