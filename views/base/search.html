@@ -1,0 +1,21 @@
+{{ define "search"}}
+<h1>Search for Players or Teams</h1>
+
+<input
+    type="text"
+    id="search"
+    placeholder="Player Tag"
+    hx-get="/v1/player/"
+    hx-trigger="keyup changed delay:500ms"
+    hx-target="#player"
+    hx-vals="js:{tagId: document.getElementById('search').value}"
+/>
+<div id="result">{{ template "player" . }}</div>
+<script>
+    document.body.addEventListener("htmx:configRequest", (event) => {
+        event.detail.path += encodeURIComponent(event.detail.parameters.tagId);
+        delete event.detail.parameters.tagId;
+    });
+</script>
+
+{{end}}

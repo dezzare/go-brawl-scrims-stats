@@ -22,7 +22,7 @@ exclude_dir = ["assets", "tmp", "vendor", "frontend/node_modules"]
 log = "air.log"
 
 # It's not necessary to trigger build each time file changes if it's too frequent.
-delay = 1000 # ms
+delay = 5000 # ms
 
 [log]
 # Show log time

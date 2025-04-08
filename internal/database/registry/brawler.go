@@ -1,4 +1,4 @@
-package handler
+package registry
 
 import (
 	"github.com/dezzare/go-brawl-scrims-stats/internal/database"

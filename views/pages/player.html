@@ -1,0 +1,29 @@
+{{define "player"}}
+
+<div id="player"></div>
+
+<script>
+    document.body.addEventListener("htmx:afterSwap", (event) => {
+        if (event.detail.target.id === "player") {
+            try {
+                const jogador = JSON.parse(event.detail.xhr.response);
+                const html = `
+                        <div>
+                            <h2>${jogador.name} (${jogador.tag})</h2>
+                            <p>Time: ${jogador.team}</p>
+                            <p>ID: ${jogador.ID}</p>
+                            <p>Criado em: ${jogador.CreatedAt}</p>
+                            <p>Atualizado em: ${jogador.UpdatedAt}</p>
+                            ${jogador.Battles ? `<p>Batalhas: ${jogador.Battles}</p>` : ""}
+                            <p>Segue: ${jogador.Follow}</p>
+                        </div>
+                    `;
+                event.detail.target.innerHTML = html;
+            } catch (error) {
+                event.detail.target.innerHTML =
+                    "<p>Jogador não encontrado.</p>";
+            }
+        }
+    });
+</script>
+{{end}}

@@ -1,0 +1,22 @@
+{{ define "team"}}
+<section>
+    <h2 class="d-flex justify-content-center">{{ .playerName }}<h2>
+    <div class="d-flex flex-row justify-content-around">
+        <div class="d-flex flex-column">
+            <p>Total Matches: {{ .TotalM }}</p>
+            <p>Total Wins: {{ .TotalW }} </p>
+            <p>Total Defeats: {{ .TotalL }} </p>
+            <p>Total Draws: {{ .TotalD }}</p>
+            <p>Total Win rate: {{ .TotalWR }}</p>
+        </div>
+        <div class="d-flex flex-column">
+            <p>Team Matches: {{ .TotalTM }} </p>
+            <p>Team Wins: {{ .TotalTW }} </p>
+            <p>Team Defeats: {{ .TotalTL }} </p>
+            <p>Team Draws: {{ .TotalTD }} </p>
+            <p>Team Win rate: {{ .TotalWR }} </p>
+        </div>
+    </div>
+     {{range .items }}<p>{{ .Result }}</p>{{else}}<div><strong>no rows</strong></div>{{end}}
+</section>
+{{ end }}

@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/dezzare/go-brawl-scrims-stats/internal/database/entity"
-	"github.com/dezzare/go-brawl-scrims-stats/internal/handler"
+	"github.com/dezzare/go-brawl-scrims-stats/internal/database/registry"
 )
 
 func showTeamStats(teamName string) {
@@ -34,7 +34,7 @@ func showTeamStats(teamName string) {
 
 func getTeamStat(teamName string) (*TeamStat, error) {
 	var players []entity.Player
-	if err := handler.GetTeamPlayers(&players, teamName); err != nil {
+	if err := registry.GetTeamPlayers(&players, teamName); err != nil {
 		return nil, err
 	}
 	var playersID []uint
@@ -48,7 +48,7 @@ func getTeamStat(teamName string) (*TeamStat, error) {
 	}
 
 	var battleResults []entity.BattleResult
-	if err := handler.GetSharedBattles(playersID, &battleResults); err != nil {
+	if err := registry.GetSharedBattles(playersID, &battleResults); err != nil {
 		return nil, err
 	}
 
