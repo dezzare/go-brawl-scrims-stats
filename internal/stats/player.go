@@ -1,98 +1,91 @@
 package stats
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
 
 	"github.com/dezzare/go-brawl-scrims-stats/internal/client"
-	"github.com/dezzare/go-brawl-scrims-stats/internal/database/entity"
-	"github.com/dezzare/go-brawl-scrims-stats/internal/database/repository"
-	"github.com/dezzare/go-brawl-scrims-stats/pkg/util"
+	"github.com/dezzare/go-brawl-scrims-stats/internal/database/model"
+	"github.com/dezzare/go-brawl-scrims-stats/internal/service"
+	"github.com/dezzare/go-brawl-scrims-stats/pkg/convert"
 )
 
-type TeamStat struct {
-	Team          string
-	BattleResults []entity.BattleResult
-	Players       []PlayerBrawlerStat
-	Brawlers      []BrawlerStat
-}
-
-type PlayerBrawlerStat struct {
-	PlayerName string
-	Brawlers   []BrawlerStat
-}
-
-type BrawlerStat struct {
-	Name      string
-	Victories uint
-	Defeat    uint
-	Draw      uint
-}
-
-func loadPlayers() {
-	fmt.Println("Loading players to memory")
-	players, err := repository.GetPlayersFromFile()
+func setPlayersBase(db *service.DB) error {
+	fmt.Println("[SPB] Loading players to memory")
+	rawPlayers, err := loadPlayersFromFile()
 	if err != nil {
-		fmt.Println(err)
-		return
+		return err
 	}
-	for _, v := range players.Player {
-		fmt.Println("Looking in DB for player: ", v.Tag)
-		p, err := repository.GetPlayerByTag(v.Tag)
-		v.Follow = true
-		if err != nil && v.Tag != "" {
-			fmt.Println("Player: ", v, "not in DB")
-			c := client.ClientConn()
-			r := util.ConvertToPlayer(c.GetPlayer(v.Tag))
-			r.Update(v)
-			repository.CreatePlayer(r)
+
+	for _, rawPlayer := range rawPlayers.Player {
+		fmt.Println("Looking in DB for player: ", rawPlayer.Tag)
+		teamInDB, err := db.FindOrCreateTeam(rawPlayer.Team)
+		playerInDB, err := db.GetPlayerByTag(rawPlayer.Tag)
+		if err != nil && rawPlayer.Tag != "" {
+			fmt.Println("Player: ", rawPlayer.Name, "not in DB")
+			p := convert.RawToPlayer(&rawPlayer, teamInDB)
+			err = db.CreatePlayer(p)
+			if err != nil {
+				fmt.Println("Error creating player from file: ", err)
+			}
 			continue
 		}
-		p.Update(v)
-		repository.SavePlayer(p)
-	}
-}
-
-func requestPlayerBattlelog(playerTag string) []entity.Battle {
-	c := client.ClientConn()
-	r := util.ConvertToBattle(c.GetBattleLog(playerTag))
-	return r
-}
-
-func setPlayersBattlelog() {
-	fmt.Println("Setting players DB")
-	loadPlayers()
-	players := repository.GetAllPlayers()
-
-	for _, v := range *players {
-		if v.Follow {
-			bl := requestPlayerBattlelog(v.Tag)
-			saveBattlelog(bl)
+		if playerInDB.Follow != true {
+			if err = db.SetPlayerFollowStatus(playerInDB, true); err != nil {
+				fmt.Println("[SPB] Error setting Follow Status: ", err)
+			}
+		}
+		if playerInDB.TeamID != &teamInDB.ID {
+			var updateData map[string]interface{}
+			if rawPlayer.Team == "" {
+				updateData = map[string]interface{}{"team_id": nil}
+			} else {
+				updateData = map[string]interface{}{"team_id": teamInDB.ID}
+			}
+			if err = db.UpdatePlayer(playerInDB, updateData); err != nil {
+				fmt.Println("[SPB] Error setting new Team for player: ", playerInDB.Tag, teamInDB.Name, err)
+			}
 		}
 	}
-	return
+	fmt.Println("[SPB] Player base ready")
+	return nil
 }
 
-func saveBattlelog(bl []entity.Battle) {
-	for _, v := range bl {
-		repository.CreateBattle(v)
+func setPlayersBattlelog(db *service.DB, c *client.Client) error {
+	fmt.Println("[SPB] Setting Players Battlelog")
+	players, err := db.GetPlayersFollowed()
+	if err != nil {
+		return err
 	}
+	for _, p := range *players {
+		if p.Follow {
+			rawBl := c.GetBattleLog(p.Tag)
+			_, err := convert.RawMatchesToBattlesAndSave(rawBl, db)
+			if err != nil {
+				fmt.Println(err)
+			}
+		}
+	}
+	fmt.Println("[SPB] Players Battlelog ready")
+	return nil
 }
 
-func setPlayersBrawlerStat(pbs *[]PlayerBrawlerStat, players *[]entity.Player) error {
+func setPlayersBrawlerStat(pbs *[]model.PlayerBrawlerStat, players *[]model.Player, db *service.DB) error {
 	// Create map for stack stats of each player
 	var playersID []uint
 	for _, player := range *players {
 		playersID = append(playersID, player.ID)
 	}
 
-	var battleResults []entity.BattleResult
-	if err := repository.GetBattleresultByPlayerIDs(playersID, &battleResults); err != nil {
+	var playerResults []model.PlayerResult
+	if err := db.GetPlayerResults(playersID, &playerResults); err != nil {
 		fmt.Println(err)
 	}
 
-	brawlers := repository.GetAllBrawlers()
+	brawlers := db.GetAllBrawlers()
 
-	playerBrawlerStats, err := convertToPlayerBrawlerStat(&battleResults, players, &brawlers)
+	playerBrawlerStats, err := convert.ToPlayerBrawlerStat(&playerResults, players, brawlers, db)
 	if err != nil {
 		return err
 	}
@@ -100,97 +93,25 @@ func setPlayersBrawlerStat(pbs *[]PlayerBrawlerStat, players *[]entity.Player) e
 	(*pbs) = playerBrawlerStats
 
 	return nil
-
 }
 
-func convertToPlayerBrawlerStat(battleResults *[]entity.BattleResult, players *[]entity.Player, brawlers *[]entity.Brawler) ([]PlayerBrawlerStat, error) {
-	// Create map for stack stats of each player
-	playerMap := make(map[uint]entity.Player)
-	for _, player := range *players {
-		playerMap[player.ID] = player
+func loadPlayersFromFile() (*model.RawPlayers, error) {
+	file, err := os.ReadFile("players.json")
+	if err != nil {
+		return nil, fmt.Errorf("Open file error: %v", err)
+	}
+	var result model.RawPlayers
+	if err := json.Unmarshal(file, &result); err != nil {
+		return nil, fmt.Errorf("Players JSON Unmarshhal error: %v", err)
 	}
 
-	pbm := make(map[string]*PlayerBrawlerStat)
-	// Take all battleResult to PlayerBrawlerStat
-	for _, v := range *battleResults {
-		player, exists := playerMap[v.PlayerID]
-		if !exists {
-			continue
-		}
-
-		brawlerName := getBrawlerNameByID(brawlers, v.BrawlerID)
-		// Add player to map if not in
-		if _, exists := pbm[player.Name]; !exists {
-			pbm[player.Name] = &PlayerBrawlerStat{
-				PlayerName: player.Name,
-				Brawlers:   []BrawlerStat{},
-			}
-		}
-
-		// Check if brawler in player list
-		var brawlerStat *BrawlerStat
-		for k := range pbm[player.Name].Brawlers {
-			if pbm[player.Name].Brawlers[k].Name == brawlerName {
-				brawlerStat = &pbm[player.Name].Brawlers[k]
-				break
-			}
-		}
-
-		// Add brawler if not in
-		if brawlerStat == nil {
-			newBrawler := BrawlerStat{Name: brawlerName}
-			pbm[player.Name].Brawlers = append(pbm[player.Name].Brawlers, newBrawler)
-			brawlerStat = &pbm[player.Name].Brawlers[len(pbm[player.Name].Brawlers)-1]
-		}
-
-		// Update stats
-		switch v.Result {
-		case "victory":
-			brawlerStat.Victories++
-		case "defeat":
-			brawlerStat.Defeat++
-		case "draw":
-			brawlerStat.Draw++
-		}
-	}
-	var playerStat []PlayerBrawlerStat
-	// Convert map to slice and add to PlayerStat
-	for _, bs := range pbm {
-		playerStat = append(playerStat, *bs)
-	}
-
-	return playerStat, nil
+	return &result, nil
 }
 
-func getBrawlerNameByID(brawlers *[]entity.Brawler, id uint) string {
-	for _, b := range *brawlers {
-		if b.ID == id {
-			return b.Name
-		}
-	}
-	return ""
-}
-
-func getBrawlerStat(pbs *[]PlayerBrawlerStat, bs *[]BrawlerStat) error {
-	pbm := make(map[string]*BrawlerStat)
-	for _, player := range *pbs {
-		for _, brawler := range player.Brawlers {
-			if _, exists := pbm[brawler.Name]; !exists {
-				pbm[brawler.Name] = &BrawlerStat{
-					Name: brawler.Name,
-				}
-			}
-			pbm[brawler.Name].Victories = pbm[brawler.Name].Victories + brawler.Victories
-			pbm[brawler.Name].Draw = pbm[brawler.Name].Draw + brawler.Draw
-			pbm[brawler.Name].Defeat = pbm[brawler.Name].Defeat + brawler.Defeat
-		}
-	}
-
-	var brawlerStat []BrawlerStat
-	for _, v := range pbm {
-		brawlerStat = append(brawlerStat, *v)
-	}
-	(*bs) = brawlerStat
-
-	return nil
-}
+// func saveBattlelog(bl []model.Battle, db *service.DB) {
+// 	for _, v := range bl {
+// 		if err := db.CreateBattle(&v); err != nil {
+// 			fmt.Println("Error saving battle: ", err)
+// 		}
+// 	}
+// }

@@ -3,26 +3,43 @@ package stats
 import (
 	"fmt"
 
-	"github.com/dezzare/go-brawl-scrims-stats/internal/database/repository"
+	"github.com/dezzare/go-brawl-scrims-stats/internal/client"
+	"github.com/dezzare/go-brawl-scrims-stats/internal/service"
 )
 
-func Start() {
+func Start(db *service.DB, c *client.Client) {
 	fmt.Println("Starting Stats")
-	setBrawlersBase()
-	setPlayersBattlelog()
-	getStats()
+
+	if err := setBrawlerBase(db, c); err != nil {
+		fmt.Println(err)
+	}
+
+	if err := setPlayersBase(db); err != nil {
+		fmt.Println(err)
+	}
+
+	if err := setPlayersBattlelog(db, c); err != nil {
+		fmt.Println(err)
+	}
+
+	showStats(db)
+
 }
 
-func getStats() {
-	players := repository.GetAllPlayers()
+func showStats(db *service.DB) {
+	players, err := db.GetPlayersFollowed()
+	if err != nil {
+		fmt.Println(err)
+	}
 
 	// Create map for check if
 	teamMap := make(map[string]bool)
-	for _, v := range *players {
-		if !teamMap[v.Team] && v.Follow {
-			teamMap[v.Team] = true
-			showTeamStats(v.Team)
+	for _, p := range *players {
+		if p.TeamID != nil {
+			if p.Team.Name != "" && !teamMap[p.Team.Name] {
+				teamMap[p.Team.Name] = true
+				showTeamStats(p.Team.ID, db)
+			}
 		}
-
 	}
 }

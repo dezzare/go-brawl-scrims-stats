@@ -3,20 +3,21 @@ package migrate
 import (
 	"fmt"
 
-	"github.com/dezzare/go-brawl-scrims-stats/internal/database/entity"
+	"github.com/dezzare/go-brawl-scrims-stats/internal/database/model"
 	"gorm.io/gorm"
 )
 
 // getEntityModels return slice of all Migration Models
 func getEntityModels() []interface{} {
 	return []interface{}{
-		&entity.Ping{}, // Just for testing
-		&entity.Brawler{},
-		&entity.BattleResult{},
-		&entity.Battle{},
-		&entity.Map{},
-		&entity.Mode{},
-		&entity.Player{},
+		&model.Ping{}, // Just for testing
+		&model.Battle{},
+		&model.Brawler{},
+		&model.Map{},
+		&model.Mode{},
+		&model.Player{},
+		&model.PlayerResult{},
+		&model.Team{},
 	}
 }
 
@@ -31,6 +32,7 @@ func AutoMigrate(db *gorm.DB) error {
 			return err
 		}
 	}
+
 	fmt.Println("Migration Completed")
 	return nil
 }
